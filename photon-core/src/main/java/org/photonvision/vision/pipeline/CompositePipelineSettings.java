@@ -19,7 +19,7 @@ package org.photonvision.vision.pipeline;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.photonvision.common.configuration.NeuralNetworkModelManager;
-import org.photonvision.common.configuration.NeuralNetworkPropertyManager;
+import org.photonvision.common.configuration.NeuralNetworkModelsSettings;
 import org.photonvision.vision.apriltag.AprilTagFamily;
 import org.photonvision.vision.objects.Model;
 import org.photonvision.vision.target.TargetModel;
@@ -45,12 +45,12 @@ public class CompositePipelineSettings extends AdvancedPipelineSettings {
     // Object detection settings
     public double confidence = 0.9;
     public double nms = 0.45;
-    public NeuralNetworkPropertyManager.ModelProperties model;
+    public NeuralNetworkModelsSettings.ModelProperties model;
 
     public CompositePipelineSettings() {
         super();
         pipelineType = PipelineType.Composite;
-        outputShowMultipleTargets = true;
+        outputMaximumTargets = 20;
         targetModel = TargetModel.kAprilTag6p5in_36h11;
         cameraExposureRaw = 20;
         cameraAutoExposure = false;

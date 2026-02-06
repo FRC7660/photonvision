@@ -158,7 +158,7 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
         sortContoursPipe.setParams(
                 new SortContoursPipe.SortContoursParams(
                         settings.contourSortMode,
-                        settings.outputShowMultipleTargets ? MAX_MULTI_TARGET_RESULTS : 1,
+                        settings.outputMaximumTargets,
                         frameStaticProperties));
 
         filterContoursPipe.setParams(

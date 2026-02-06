@@ -172,6 +172,15 @@ wpilibTools.deps.wpilibVersion = wpi.versions.wpilibVersion.get()
 def nativeConfigName = 'wpilibNatives'
 def nativeConfig = configurations.create(nativeConfigName)
 
+// Ensure photontargeting JNI/native libs get bundled via wpilibNatives in photon-core.
+def nativeZipTaskName = "${zipBaseName}-${jniPlatform}"
+def nativeZipFile = layout.buildDirectory.file("outputs/${nativeZipTaskName}.zip")
+artifacts {
+    add(nativeConfigName, nativeZipFile) {
+        builtBy(tasks.matching { it.name == nativeZipTaskName })
+    }
+}
+
 def nativeTasks = wpilibTools.createExtractionTasks {
     configurationName = nativeConfigName
 }
