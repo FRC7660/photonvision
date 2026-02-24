@@ -19,6 +19,12 @@ Use this workflow when deploying a locally built jar to a PhotonVision device.
 From repo root:
 
 ```bash
+BUILD_START=$(date +%s)
+
+# Build native targeting artifacts first (avoids missing wpilibNatives zips in some environments)
+./gradlew :photon-targeting:build
+
+# Then build the deployable server jar
 ./gradlew :photon-server:shadowJar
 ```
 
@@ -27,6 +33,13 @@ Find the newest built ARM64 jar:
 ```bash
 NEW_JAR=$(ls -1t photon-server/build/libs/photonvision*-linuxarm64.jar | head -n 1)
 echo "$NEW_JAR"
+
+# Ensure it was built after this deploy session started
+NEW_JAR_MTIME=$(stat -c %Y "$NEW_JAR")
+if [ "$NEW_JAR_MTIME" -lt "$BUILD_START" ]; then
+  echo "No new linuxarm64 jar produced by this build; aborting deploy."
+  exit 1
+fi
 ```
 
 ### 2) Copy jar to target
