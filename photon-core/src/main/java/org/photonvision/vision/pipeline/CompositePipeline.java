@@ -29,6 +29,7 @@ import edu.wpi.first.math.util.Units;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.photonvision.common.configuration.ConfigManager;
 import org.photonvision.common.configuration.NeuralNetworkModelManager;
@@ -70,6 +71,7 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
 
     private final CVMat[] grayRing = new CVMat[] {new CVMat(), new CVMat()};
     private int grayRingIndex = 0;
+    private final CVMat resizedGrayMat = new CVMat();
 
     public CompositePipeline() {
         super(PROCESSING_TYPE);
@@ -193,8 +195,18 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
         if (settings.enableAprilTag && !colorMat.empty()) {
             CVMat grayMat = nextGrayMat(frame.colorImage);
 
+            // Optionally resize the greyscale image for faster AprilTag detection
+            double scale = Math.max(0.1, Math.min(1.0, settings.aprilTagResolutionScale));
+            CVMat detectionMat = grayMat;
+            if (scale < 1.0) {
+                var graySize = grayMat.getMat().size();
+                var newSize = new Size(graySize.width * scale, graySize.height * scale);
+                Imgproc.resize(grayMat.getMat(), resizedGrayMat.getMat(), newSize, 0, 0, Imgproc.INTER_AREA);
+                detectionMat = resizedGrayMat;
+            }
+
             CVPipeResult<List<AprilTagDetection>> tagDetectionPipeResult =
-                    aprilTagDetectionPipe.run(grayMat);
+                    aprilTagDetectionPipe.run(detectionMat);
             sumPipeNanosElapsed += tagDetectionPipeResult.nanosElapsed;
 
             List<AprilTagDetection> detections = tagDetectionPipeResult.output;
@@ -204,11 +216,16 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
                 if (detection.getDecisionMargin() < settings.decisionMargin) continue;
                 if (detection.getHamming() > settings.hammingDist) continue;
 
-                usedDetections.add(detection);
+                // Scale corners back to original resolution if we resized
+                AprilTagDetection scaledDetection = (scale < 1.0)
+                        ? rescaleDetection(detection, 1.0 / scale)
+                        : detection;
+
+                usedDetections.add(scaledDetection);
 
                 TrackedTarget target =
                         new TrackedTarget(
-                                detection,
+                                scaledDetection,
                                 null,
                                 new TargetCalculationParameters(
                                         false, null, null, null, null, frameStaticProperties));
@@ -330,11 +347,33 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
         return grayMat;
     }
 
+    /**
+     * Rescale an AprilTagDetection's corner and center coordinates by the given factor.
+     * Used to map detections from a resized image back to original image coordinates.
+     */
+    private static AprilTagDetection rescaleDetection(AprilTagDetection detection, double factor) {
+        double[] origCorners = detection.getCorners();
+        double[] scaledCorners = new double[origCorners.length];
+        for (int i = 0; i < origCorners.length; i++) {
+            scaledCorners[i] = origCorners[i] * factor;
+        }
+        return new AprilTagDetection(
+                detection.getFamily(),
+                detection.getId(),
+                detection.getHamming(),
+                detection.getDecisionMargin(),
+                detection.getHomography(),
+                detection.getCenterX() * factor,
+                detection.getCenterY() * factor,
+                scaledCorners);
+    }
+
     @Override
     public void release() {
         aprilTagDetectionPipe.release();
         singleTagPoseEstimatorPipe.release();
         objectDetectorPipe.release();
+        resizedGrayMat.release();
         for (var cvMat : grayRing) {
             cvMat.release();
         }

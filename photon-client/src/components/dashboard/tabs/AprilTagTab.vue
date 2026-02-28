@@ -22,6 +22,13 @@ const aprilTagDisabled = computed(
     currentPipelineSettings.value.pipelineType === PipelineType.Composite &&
     !currentPipelineSettings.value.enableAprilTag
 );
+
+const aprilTagResolutionOptions = [
+  { name: "Native (1.0x)", value: 1.0 },
+  { name: "75% (0.75x)", value: 0.75 },
+  { name: "50% (0.5x)", value: 0.5 },
+  { name: "25% (0.25x)", value: 0.25 }
+];
 </script>
 
 <template>
@@ -38,6 +45,18 @@ const aprilTagDisabled = computed(
       :switch-cols="interactiveCols"
       @update:modelValue="
         (value) => useCameraSettingsStore().changeCurrentPipelineSetting({ enableAprilTag: value }, false)
+      "
+    />
+    <pv-select
+      v-if="currentPipelineSettings.pipelineType === PipelineType.Composite"
+      v-model="currentPipelineSettings.aprilTagResolutionScale"
+      label="AprilTag Resolution"
+      tooltip="Scale factor for the image passed to the AprilTag detector. Lower values increase FPS but reduce detection range."
+      :items="aprilTagResolutionOptions"
+      :select-cols="interactiveCols"
+      :disabled="aprilTagDisabled"
+      @update:modelValue="
+        (value) => useCameraSettingsStore().changeCurrentPipelineSetting({ aprilTagResolutionScale: value }, false)
       "
     />
     <pv-select

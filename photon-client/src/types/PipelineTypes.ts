@@ -332,6 +332,7 @@ export interface CompositePipelineSettings extends PipelineSettings {
 
   hammingDist: number;
   numIterations: number;
+  aprilTagResolutionScale: number;
   decimate: number;
   blur: number;
   decisionMargin: number;
@@ -365,6 +366,7 @@ export const DefaultCompositePipelineSettings: CompositePipelineSettings = {
 
   hammingDist: 0,
   numIterations: 40,
+  aprilTagResolutionScale: 1.0,
   decimate: 1,
   blur: 0,
   decisionMargin: 35,

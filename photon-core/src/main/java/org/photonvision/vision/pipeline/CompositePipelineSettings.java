@@ -31,6 +31,7 @@ public class CompositePipelineSettings extends AdvancedPipelineSettings {
 
     // AprilTag settings
     public AprilTagFamily tagFamily = AprilTagFamily.kTag36h11;
+    public double aprilTagResolutionScale = 1.0;
     public int decimate = 1;
     public double blur = 0;
     public int threads = 4;
