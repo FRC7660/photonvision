@@ -24,8 +24,12 @@ BUILD_START=$(date +%s)
 # Build native targeting artifacts first (avoids missing wpilibNatives zips in some environments)
 ./gradlew :photon-targeting:build
 
-# Then build the deployable server jar
-./gradlew :photon-server:shadowJar
+# Then build the deployable ARM64 server jar.
+# Plain `:photon-server:shadowJar` builds the host-platform jar on this machine,
+# typically at `photon-server/build/libs/photonvision-*-linuxx64.jar`.
+# The ARM64 deploy jar is written to
+# `photon-server/build/libs/photonvision-*-linuxarm64.jar`.
+./gradlew :photon-server:shadowJar -PArchOverride=linuxarm64 -Ponlylinuxarm64
 ```
 
 Find the newest built ARM64 jar:
