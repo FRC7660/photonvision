@@ -24,10 +24,10 @@ const aprilTagDisabled = computed(
     !currentPipelineSettings.value.enableAprilTag
 );
 
-// Divisors [2, 4, 6] match the stream resolution pattern; scale must be < 1 so divisor 1 is excluded.
+// Divisors [1, 2, 4, 6] match the stream resolution pattern.
 const aprilTagResolutionOptions = computed(() => {
   const { width, height } = useCameraSettingsStore().currentVideoFormat.resolution;
-  return [2, 4, 6].map((d) => ({
+  return [1, 2, 4, 6].map((d) => ({
     name: getResolutionString({ width: Math.floor(width / d), height: Math.floor(height / d) }),
     value: 1 / d
   }));
