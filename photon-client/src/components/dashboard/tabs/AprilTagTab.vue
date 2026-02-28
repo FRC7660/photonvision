@@ -6,6 +6,7 @@ import PvSwitch from "@/components/common/pv-switch.vue";
 import { computed } from "vue";
 import { useStateStore } from "@/stores/StateStore";
 import { useCameraSettingsStore } from "@/stores/settings/CameraSettingsStore";
+import { getResolutionString } from "@/lib/PhotonUtils";
 import { useDisplay } from "vuetify";
 
 // TODO fix pipeline typing in order to fix this, the store settings call should be able to infer that only valid pipeline type settings are exposed based on pre-checks for the entire config section
@@ -23,12 +24,14 @@ const aprilTagDisabled = computed(
     !currentPipelineSettings.value.enableAprilTag
 );
 
-const aprilTagResolutionOptions = [
-  { name: "Native (1.0x)", value: 1.0 },
-  { name: "75% (0.75x)", value: 0.75 },
-  { name: "50% (0.5x)", value: 0.5 },
-  { name: "25% (0.25x)", value: 0.25 }
-];
+// Divisors [2, 4, 6] match the stream resolution pattern; scale must be < 1 so divisor 1 is excluded.
+const aprilTagResolutionOptions = computed(() => {
+  const { width, height } = useCameraSettingsStore().currentVideoFormat.resolution;
+  return [2, 4, 6].map((d) => ({
+    name: getResolutionString({ width: Math.floor(width / d), height: Math.floor(height / d) }),
+    value: 1 / d
+  }));
+});
 </script>
 
 <template>

@@ -44,6 +44,7 @@ public class CompositePipelineSettings extends AdvancedPipelineSettings {
     public boolean doSingleTargetAlways = false;
 
     // Object detection settings
+    public double objectDetectionResolutionScale = 1.0;
     public double confidence = 0.9;
     public double nms = 0.45;
     public NeuralNetworkModelsSettings.ModelProperties model;

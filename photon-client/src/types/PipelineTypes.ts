@@ -343,6 +343,7 @@ export interface CompositePipelineSettings extends PipelineSettings {
   doMultiTarget: boolean;
   doSingleTargetAlways: boolean;
 
+  objectDetectionResolutionScale: number;
   confidence: number;
   nms: number;
   box_thresh: number;
@@ -377,6 +378,7 @@ export const DefaultCompositePipelineSettings: CompositePipelineSettings = {
   doMultiTarget: false,
   doSingleTargetAlways: false,
 
+  objectDetectionResolutionScale: 1.0,
   confidence: 0.9,
   nms: 0.45,
   box_thresh: 0.25,

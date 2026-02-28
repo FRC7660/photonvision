@@ -8,6 +8,7 @@ import PvSwitch from "@/components/common/pv-switch.vue";
 import { computed } from "vue";
 import { useStateStore } from "@/stores/StateStore";
 import { useSettingsStore } from "@/stores/settings/GeneralSettingsStore";
+import { getResolutionString } from "@/lib/PhotonUtils";
 import { useDisplay } from "vuetify";
 import type { ObjectDetectionModelProperties } from "@/types/SettingTypes";
 
@@ -37,6 +38,15 @@ const objectDetectionDisabled = computed(
     currentPipelineSettings.value.pipelineType === PipelineType.Composite &&
     !currentPipelineSettings.value.enableObjectDetection
 );
+
+// Divisors [2, 4, 6] match the stream resolution pattern; scale must be < 1 so divisor 1 is excluded.
+const odResolutionOptions = computed(() => {
+  const { width, height } = useCameraSettingsStore().currentVideoFormat.resolution;
+  return [2, 4, 6].map((d) => ({
+    name: getResolutionString({ width: Math.floor(width / d), height: Math.floor(height / d) }),
+    value: 1 / d
+  }));
+});
 
 // Filters out models that are not supported by the current backend, and returns a flattened list.
 const supportedModels = computed<ObjectDetectionModelProperties[]>(() => {
@@ -82,6 +92,18 @@ const selectedModel = computed({
       :switch-cols="interactiveCols"
       @update:modelValue="
         (value) => useCameraSettingsStore().changeCurrentPipelineSetting({ enableObjectDetection: value }, false)
+      "
+    />
+    <pv-select
+      v-if="currentPipelineSettings.pipelineType === PipelineType.Composite"
+      v-model="(currentPipelineSettings as CompositePipelineSettings).objectDetectionResolutionScale"
+      label="OD Resolution"
+      tooltip="Scale factor for the image passed to the object detector. Lower values increase FPS but may reduce detection accuracy."
+      :items="odResolutionOptions"
+      :select-cols="interactiveCols"
+      :disabled="objectDetectionDisabled"
+      @update:modelValue="
+        (value) => useCameraSettingsStore().changeCurrentPipelineSetting({ objectDetectionResolutionScale: value }, false)
       "
     />
     <pv-select

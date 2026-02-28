@@ -72,6 +72,7 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
     private final CVMat[] grayRing = new CVMat[] {new CVMat(), new CVMat()};
     private int grayRingIndex = 0;
     private final CVMat resizedGrayMat = new CVMat();
+    private final CVMat resizedColorMat = new CVMat();
 
     public CompositePipeline() {
         super(PROCESSING_TYPE);
@@ -298,9 +299,36 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
         List<String> classNames = List.of();
 
         if (settings.enableObjectDetection && !colorMat.empty()) {
+            double odScale = Math.max(0.1, Math.min(1.0, settings.objectDetectionResolutionScale));
+            CVMat odInputMat = frame.colorImage;
+            if (odScale < 1.0) {
+                var colorSize = colorMat.size();
+                var newSize = new Size(colorSize.width * odScale, colorSize.height * odScale);
+                Imgproc.resize(colorMat, resizedColorMat.getMat(), newSize, 0, 0, Imgproc.INTER_AREA);
+                odInputMat = resizedColorMat;
+            }
+
             CVPipeResult<List<NeuralNetworkPipeResult>> neuralNetworkResult =
-                    objectDetectorPipe.run(frame.colorImage);
+                    objectDetectorPipe.run(odInputMat);
             sumPipeNanosElapsed += neuralNetworkResult.nanosElapsed;
+
+            // Scale bounding boxes back to original resolution if we resized
+            if (odScale < 1.0) {
+                double invScale = 1.0 / odScale;
+                var scaledResult = new CVPipeResult<List<NeuralNetworkPipeResult>>();
+                scaledResult.nanosElapsed = neuralNetworkResult.nanosElapsed;
+                scaledResult.output = neuralNetworkResult.output.stream()
+                        .map(r -> new NeuralNetworkPipeResult(
+                                new org.opencv.core.Rect2d(
+                                        r.bbox().x * invScale,
+                                        r.bbox().y * invScale,
+                                        r.bbox().width * invScale,
+                                        r.bbox().height * invScale),
+                                r.classIdx(),
+                                r.confidence()))
+                        .toList();
+                neuralNetworkResult = scaledResult;
+            }
 
             classNames = objectDetectorPipe.getClassNames();
 
@@ -374,6 +402,7 @@ public class CompositePipeline extends CVPipeline<CompositePipelineResult, Compo
         singleTagPoseEstimatorPipe.release();
         objectDetectorPipe.release();
         resizedGrayMat.release();
+        resizedColorMat.release();
         for (var cvMat : grayRing) {
             cvMat.release();
         }
